@@ -9,6 +9,9 @@ from langchain_community.callbacks import get_openai_callback
 import os
 import logging
 
+# Basic logging setup
+logging.basicConfig(level=logging.DEBUG)
+
 load_dotenv()
 
 
