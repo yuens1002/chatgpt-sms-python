@@ -31,7 +31,7 @@ class Code_Error(ValueError):
     pass
 
 
-class Zoho_api:
+class ZohoBookingApi:
     def __init__(self):
         load_dotenv()
         self._access_token_expires_at = None

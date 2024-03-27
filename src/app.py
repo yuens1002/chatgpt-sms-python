@@ -2,7 +2,7 @@ from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 from langchain_openai import OpenAIEmbeddings
 from utils import pdf_qa as pqa
-from .prompt.chat_prompt_chain import ChatPrompt
+from prompt.chat_prompt_chain import ChatPrompt
 from utils.chat_session import GlobalChatHistory, handle_incoming_sms
 from utils.SQLite_setup import UserDb
 

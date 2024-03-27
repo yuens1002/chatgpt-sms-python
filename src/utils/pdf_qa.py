@@ -1,25 +1,19 @@
 from dotenv import load_dotenv
 
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAI
+from langchain_openai import OpenAI, ChatOpenAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from PyPDF2 import PdfReader
 from langchain_community.callbacks import get_openai_callback
 import os
 import logging
+from utils.path_finder import get_parent_child_path
 
 # Basic logging setup
 logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
-
-
-def get_parent_child_path(child_dir_name):
-    """Returns the path to a directory within the parent directory."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(current_dir)
-    return os.path.join(parent_dir, child_dir_name)
 
 
 def create_vector_store(file_name, v_store_name, embeddings):
