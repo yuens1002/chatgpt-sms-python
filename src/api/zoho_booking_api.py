@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import pickle
 import logging
 
+load_dotenv()
+
 # Basic logging setup
 logging.basicConfig(level=logging.DEBUG)
 
@@ -33,7 +35,7 @@ class Code_Error(ValueError):
 
 class ZohoBookingApi:
     def __init__(self):
-        load_dotenv()
+
         self._access_token_expires_at = None
         self._auth_base_url = "https://accounts.zoho.com/oauth/v2/token"
         self._booking_base_url = "https://www.zohoapis.com/bookings/v1/json"
@@ -43,10 +45,10 @@ class ZohoBookingApi:
         self._auth_code = getenv("ZOHO_AUTH_CODE")
         self.appointment_urls = {
             "book": "appointment",
-            "get": "getappointment",
-            "update": "updateappointment",
-            "reschedule": "rescheduleappointment",
-            "availability": "rescheduleappointment",
+            "get": "get_appointment",
+            "update": "update_appointment",
+            "reschedule": "reschedule_appointment",
+            "availability": "availability",
         }
 
     def _get_saved_creds(self):
@@ -120,36 +122,40 @@ class ZohoBookingApi:
 
     def refresh_access_token(self):
         creds = self.get_auth_tokens()  # get refresh_token
-        try:
-            response = requests.post(
-                f"{self._auth_base_url}?refresh_token={creds['refresh_token']}&client_id={self._client_id}&client_secret={self._client_secret}&grant_type=refresh_token"
-            )
-            if response.status_code == 200:
-                data = response.json()
-                if "error" in data:
-                    raise Code_Error(data["error"])
-                with open(pickle_token_path, "rb") as token:
-                    creds = pickle.load(token)
-                creds["access_token"] = data["access_token"]
-                with open(pickle_token_path, "wb") as token:
-                    pickle.dump(creds, token)
-                self._set_access_token_expires_at(data["expires_in"])
-            response.raise_for_status()  # Raise an exception if any or nothing
-        except Code_Error as e:
-            logging.error(
-                f"Error: {e}, refer to https://www.zoho.com/bookings/help/api/v1/refreshaccesstoken.html for more details"
-            )
-        except requests.exceptions.HTTPError as e:
-            logging.error(f"An HTTP error occurred during access token request: {e}")
-        except requests.exceptions.RequestException as e:
-            logging.error(f"An error occurred during access token request: {e}")
+        if creds is not None:
+            try:
+                response = requests.post(
+                    f"{self._auth_base_url}?refresh_token={creds['refresh_token']}&client_id={self._client_id}&client_secret={self._client_secret}&grant_type=refresh_token"
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    if "error" in data:
+                        raise Code_Error(data["error"])
+                    with open(pickle_token_path, "rb") as token:
+                        creds = pickle.load(token)
+                    creds["access_token"] = data["access_token"]
+                    with open(pickle_token_path, "wb") as token:
+                        pickle.dump(creds, token)
+                    self._set_access_token_expires_at(data["expires_in"])
+                response.raise_for_status()  # Raise an exception if any or nothing
+            except Code_Error as e:
+                logging.error(
+                    f"Error: {e}, refer to https://www.zoho.com/bookings/help/api/v1/refreshaccesstoken.html for more details"
+                )
+            except requests.exceptions.HTTPError as e:
+                logging.error(
+                    f"An HTTP error occurred during access token request: {e}"
+                )
+            except requests.exceptions.RequestException as e:
+                logging.error(f"An error occurred during access token request: {e}")
 
-    def appointment(self, url, form_data):
+    def appointment(self, url: str, form_data: dict):
         access_token = self._get_valid_access_token()
 
         try:
             url = f"{self._booking_base_url}/{self.appointment_urls[url]}"
             headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
+
             response = requests.post(url=url, headers=headers, data=form_data)
             if response.status_code == 200:
                 return response.json()
@@ -158,3 +164,23 @@ class ZohoBookingApi:
             logging.error(f"An HTTP error occurred during booking request: {e}")
         except requests.exceptions.RequestException as e:
             logging.error(f"Error occurred during booking request: {e}")
+
+    def availability(self, url, selected_date):
+        access_token = self._get_valid_access_token()
+
+        try:
+            url = f"{self._booking_base_url}/{self.appointment_urls[url]}"
+            headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
+            params = {
+                "service_id": getenv("SERVICE_ID"),
+                "staff_id": getenv("STAFF_ID"),
+                "selected_date": selected_date,
+            }
+            response = requests.get(url=url, headers=headers, params=params)
+            if response.status_code == 200:
+                return response.json()
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            logging.error(f"An HTTP error occurred during availability request: {e}")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error occurred during availability request: {e}")
