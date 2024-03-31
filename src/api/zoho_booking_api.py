@@ -44,11 +44,12 @@ class ZohoBookingApi:
         self._client_secret = getenv("ZOHO_CLIENT_SECRET")
         self._auth_code = getenv("ZOHO_AUTH_CODE")
         self.appointment_urls = {
+            # the dict item value is used to append to the end of the api url
             "book": "appointment",
             "get": "get_appointment",
             "update": "update_appointment",
             "reschedule": "reschedule_appointment",
-            "availability": "availability",
+            "availability": "availableslots",
         }
 
     def _get_saved_creds(self):
@@ -151,7 +152,6 @@ class ZohoBookingApi:
 
     def appointment(self, url: str, form_data: dict):
         access_token = self._get_valid_access_token()
-
         try:
             url = f"{self._booking_base_url}/{self.appointment_urls[url]}"
             headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
@@ -165,7 +165,7 @@ class ZohoBookingApi:
         except requests.exceptions.RequestException as e:
             logging.error(f"Error occurred during booking request: {e}")
 
-    def availability(self, url, selected_date):
+    def availability(self, url: str, selected_date: str):
         access_token = self._get_valid_access_token()
 
         try:
