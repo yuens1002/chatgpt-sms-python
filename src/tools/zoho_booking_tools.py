@@ -65,9 +65,7 @@ class ZohoCreateAppointment(BaseTool):
                 },
             )
             if not result:
-                print("not result: ", result)
                 raise ValueError("Zoho API did not return a valid response")
-            print("with result: ", result)
             return json.dumps(result)
         except (
             requests.exceptions.HTTPError,

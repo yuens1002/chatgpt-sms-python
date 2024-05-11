@@ -46,9 +46,9 @@ class ZohoBookingApi:
         self.appointment_urls = {
             # the dict item value is used to append to the end of the api url
             "book": "appointment",
-            "get": "get_appointment",
-            "update": "update_appointment",
-            "reschedule": "reschedule_appointment",
+            "get": "getappointment",
+            "update": "updateappointment",
+            "reschedule": "rescheduleappointment",
             "availability": "availableslots",
         }
 

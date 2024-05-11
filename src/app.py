@@ -1,25 +1,39 @@
-from flask import Flask, request
+from flask import Flask, request, g
 from twilio.twiml.messaging_response import MessagingResponse
-from langchain_openai import OpenAIEmbeddings
-from utils import pdf_qa as pqa
 from prompt.chat_prompt_chain import ChatPrompt
 from utils.chat_session import GlobalChatHistory, handle_incoming_sms
 from utils.SQLite_setup import UserDb
+from src.tools.zoho_booking_tools import ZohoCreateAppointment, ZohoCheckAvailability
 
-chain = ChatPrompt().chain
+create_appointment_tool = ZohoCreateAppointment()
+check_availability_tool = ZohoCheckAvailability()
+
+tools = [create_appointment_tool, check_availability_tool]
+
+chat_prompt = ChatPrompt()
 global_chat_history = GlobalChatHistory()
-db = UserDb()
-# v_store = pqa.create_vector_store("data.pdf", "v_store", OpenAIEmbeddings())
+
 app = Flask(__name__)
+
+
+def get_db():
+    if "db" not in g:
+        g.db = UserDb()
+    return g.db
 
 
 @app.route("/sms", methods=["POST"])
 def sms_chat():
     """get incoming message"""
+    print("request.form: ", request.form)
     inb_msg = request.form["Body"].lower()
-    from_phone = request.form["from"]
+    from_phone = request.form["From"]
 
-    output = handle_incoming_sms(db, from_phone, chain, global_chat_history, inb_msg)
+    db = get_db()
+
+    output = handle_incoming_sms(
+        db, chat_prompt, from_phone, global_chat_history, inb_msg
+    )
 
     # Start TwiML response
     resp = MessagingResponse()
@@ -33,6 +47,13 @@ def sms_chat():
     # resp.message(qa_res)
 
     return str(resp)
+
+
+@app.teardown_appcontext
+def close_db(exception=None):
+    db = g.pop("db", None)
+    if db is not None:
+        del db  # Delete the db object, triggering the __del__ method
 
 
 if __name__ == "__main__":
